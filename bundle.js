@@ -1664,7 +1664,8 @@ module.exports = isArray || function (val) {
 },{}],5:[function(require,module,exports){
 'use strict';
 
-var traverse = require('./util/traverse'),
+var container = require('./util/container'),
+    traverse = require('./util/traverse'),
     formats = require('./util/formats');
 
 var deref = require('deref');
@@ -1689,17 +1690,8 @@ function generate(schema, refs) {
   }
 }
 
-var container = require('./util/container');
-
-// TODO: shall we move it to a separate module?
-function extend(generatorName, fn) {
-    var generator = container.get(generatorName);
-    container.set(generatorName, fn(generator));
-}
-
 generate.formats = formats;
-
-generate.extend = extend;
+generate.extend = container.set;
 
 module.exports = generate;
 
@@ -1864,24 +1856,26 @@ module.exports = function(value, path) {
     return props;
   }
 
-  var reqs = value.required || [],
-      base = value.properties ? Object.keys(value.properties) : [];
+  var reqProps = value.required || [],
+      allProps = value.properties ? Object.keys(value.properties) : [];
 
-  reqs.forEach(function(key, index) {
+  reqProps.forEach(function(key) {
     if (value.properties && value.properties[key]) {
       props[key] = value.properties[key];
     }
+  });
 
-    base.splice(index, 1);
+  var optProps = allProps.filter(function(prop) {
+    return reqProps.indexOf(prop) === -1;
   });
 
   if (value.patternProperties) {
-    base = Array.prototype.concat.apply(base, Object.keys(value.patternProperties));
+    optProps = Array.prototype.concat.apply(optProps, Object.keys(value.patternProperties));
   }
 
-  var length = random(value.minProperties, value.maxProperties, 1, 5);
+  var length = random(value.minProperties, value.maxProperties, 0, optProps.length);
 
-  random.shuffle(base).slice(0, length).forEach(function(key) {
+  random.shuffle(optProps).slice(0, length).forEach(function(key) {
     if (value.properties && value.properties[key]) {
       props[key] = value.properties[key];
     } else {
@@ -1889,16 +1883,13 @@ module.exports = function(value, path) {
     }
   });
 
-  if (value.minProperties || value.maxProperties || value.additionalProperties) {
-    var current = Object.keys(props).length;
+  var current = Object.keys(props).length,
+      sample = typeof value.additionalProperties === 'object' ? value.additionalProperties : {};
 
-    if (current < length) {
-      var sample = typeof value.additionalProperties === 'object' ? value.additionalProperties : {};
-
-      faker.lorem.words(length - current).forEach(function(key) {
-        props[key + randexp('\\w{1,10}')] = sample;
-      });
-    }
+  if (current < length) {
+    faker.lorem.words(length - current).forEach(function(key) {
+      props[key + randexp('\\w{1,10}')] = sample;
+    });
   }
 
   return traverse(props, path.concat(['properties']));
@@ -2049,21 +2040,22 @@ module.exports = combine;
 // static requires - handle both initial dependency load (deps will be available
 // among other modules) as well as they will be included by browserify AST
 var container = {
-    faker: require('faker'),
-    chance: require('chance'),
-    randexp: require('randexp')
+  faker: require('faker'),
+  chance: require('chance'),
+  randexp: require('randexp')
 };
 
 module.exports = {
-    set: function(name, value) {
-        container[name] = value;
-    },
-    get: function(name) {
-        if (typeof container[name] === 'undefined') {
-            throw new ReferenceError('"' + name + '" dependency doesn\'t exist.');
-        }
-        return container[name];
+  set: function(name, callback) {
+    if (typeof container[name] === 'undefined') {
+      throw new ReferenceError('"' + name + '" dependency doesn\'t exist.');
     }
+
+    container[name] = callback(container[name]);
+  },
+  get: function(name) {
+    return container[name];
+  }
 };
 
 },{"chance":21,"faker":28,"randexp":72}],15:[function(require,module,exports){
@@ -2142,23 +2134,11 @@ var random = module.exports = function(min, max, defMin, defMax) {
   defMin = typeof defMin === 'undefined' ? random.MIN_NUMBER : defMin;
   defMax = typeof defMax === 'undefined' ? random.MAX_NUMBER : defMax;
 
-  if (typeof max === 'undefined' && min > defMax) {
-    defMax += min;
-  }
-
   min = typeof min === 'undefined' ? defMin : min;
   max = typeof max === 'undefined' ? defMax : max;
 
-  if (min !== +min) {
-    throw new RangeError('value ' + JSON.stringify(min) + ' is not-a-number');
-  }
-
-  if (max !== +max) {
-    throw new RangeError('value ' + JSON.stringify(min) + ' is not-a-number');
-  }
-
   if (max < min) {
-    throw new RangeError('invalid range between: ' + min + ', ' + max);
+    max += min;
   }
 
   return faker.random.number({
