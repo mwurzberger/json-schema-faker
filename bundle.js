@@ -1695,7 +1695,7 @@ generate.extend = container.set;
 
 module.exports = generate;
 
-},{"./util/container":14,"./util/formats":16,"./util/traverse":20,"deref":22}],6:[function(require,module,exports){
+},{"./util/container":14,"./util/formats":16,"./util/traverse":21,"deref":23}],6:[function(require,module,exports){
 'use strict';
 
 var random = require('../util/random'),
@@ -1764,7 +1764,7 @@ module.exports = function(value, path) {
   return items;
 };
 
-},{"../util/error":15,"../util/has-props":17,"../util/random":19,"../util/traverse":20}],7:[function(require,module,exports){
+},{"../util/error":15,"../util/has-props":17,"../util/random":20,"../util/traverse":21}],7:[function(require,module,exports){
 'use strict';
 
 module.exports = function() {
@@ -1831,7 +1831,7 @@ module.exports = function(value) {
   return random(Math.random() > 0.5, min, max);
 };
 
-},{"../util/random":19,"./string":12}],11:[function(require,module,exports){
+},{"../util/random":20,"./string":12}],11:[function(require,module,exports){
 'use strict';
 
 var container = require('../util/container'),
@@ -1895,7 +1895,7 @@ module.exports = function(value, path) {
   return traverse(props, path.concat(['properties']));
 };
 
-},{"../util/container":14,"../util/error":15,"../util/has-props":17,"../util/random":19,"../util/traverse":20}],12:[function(require,module,exports){
+},{"../util/container":14,"../util/error":15,"../util/has-props":17,"../util/random":20,"../util/traverse":21}],12:[function(require,module,exports){
 'use strict';
 
 var container = require('../util/container');
@@ -2017,7 +2017,7 @@ module.exports = function(value) {
   return faker.lorem.words(random(1, 5)).join(' ');
 };
 
-},{"../util/container":14,"../util/formats":16,"../util/random":19}],13:[function(require,module,exports){
+},{"../util/container":14,"../util/formats":16,"../util/random":20}],13:[function(require,module,exports){
 'use strict';
 
 function combine(target) {
@@ -2058,7 +2058,7 @@ module.exports = {
   }
 };
 
-},{"chance":21,"faker":28,"randexp":72}],15:[function(require,module,exports){
+},{"chance":22,"faker":29,"randexp":73}],15:[function(require,module,exports){
 'use strict';
 
 function ParseError(message, path) {
@@ -2102,6 +2102,56 @@ module.exports = function(obj) {
 },{}],18:[function(require,module,exports){
 'use strict';
 
+var inferredProperties = {
+  array: [
+    'additionalItems',
+    'items',
+    'maxItems',
+    'minItems',
+    'uniqueItems'
+  ],
+  integer: [
+    'exclusiveMaximum',
+    'exclusiveMinimum',
+    'maximum',
+    'minimum',
+    'multipleOf'
+  ],
+  object: [
+    'additionalProperties',
+    'dependencies',
+    'maxProperties',
+    'minProperties',
+    'patternProperties',
+    'properties',
+    'required'
+  ],
+  string: [
+    'maxLength',
+    'menlength',
+    'pattern'
+  ]
+};
+
+inferredProperties.number = inferredProperties.integer;
+
+function mayHaveType(obj, props) {
+  return Object.keys(obj).filter(function(prop) {
+    return props.indexOf(prop) > -1;
+  }).length > 0;
+}
+
+module.exports = function(obj) {
+  for (var type in inferredProperties) {
+    if (mayHaveType(obj, inferredProperties[type])) {
+      return type;
+    }
+  }
+};
+
+},{}],19:[function(require,module,exports){
+'use strict';
+
 module.exports = {
   array: require('../types/array'),
   boolean: require('../types/boolean'),
@@ -2112,7 +2162,7 @@ module.exports = {
   string: require('../types/string')
 };
 
-},{"../types/array":6,"../types/boolean":7,"../types/integer":8,"../types/null":9,"../types/number":10,"../types/object":11,"../types/string":12}],19:[function(require,module,exports){
+},{"../types/array":6,"../types/boolean":7,"../types/integer":8,"../types/null":9,"../types/number":10,"../types/object":11,"../types/string":12}],20:[function(require,module,exports){
 'use strict';
 
 var container = require('./container');
@@ -2170,13 +2220,15 @@ random.pick = function(obj) {
 random.MIN_NUMBER = -100;
 random.MAX_NUMBER = 100;
 
-},{"./container":14}],20:[function(require,module,exports){
+},{"./container":14}],21:[function(require,module,exports){
 'use strict';
 
 var random = require('./random'),
     combine = require('./combine');
 
 var ParseError = require('./error');
+
+var inferredType = require('./inferred');
 
 function reduce(obj) {
   var mix = obj.allOf || obj.anyOf || obj.oneOf;
@@ -2235,6 +2287,9 @@ function traverse(obj, path) {
 
   if (Array.isArray(type)) {
     type = random.pick(type);
+  } else if (typeof type === 'undefined') {
+    // Attempt to infer the type
+    type = inferredType(obj) || type;
   }
 
   if (typeof type === 'string') {
@@ -2268,7 +2323,7 @@ function traverse(obj, path) {
 
 module.exports = traverse;
 
-},{"./combine":13,"./error":15,"./primitives":18,"./random":19}],21:[function(require,module,exports){
+},{"./combine":13,"./error":15,"./inferred":18,"./primitives":19,"./random":20}],22:[function(require,module,exports){
 (function (Buffer){
 //  Chance.js 0.7.5
 //  http://chancejs.com
@@ -4784,7 +4839,7 @@ module.exports = traverse;
 })();
 
 }).call(this,require("buffer").Buffer)
-},{"buffer":1}],22:[function(require,module,exports){
+},{"buffer":1}],23:[function(require,module,exports){
 'use strict';
 
 var $ = require('./util/uri-helpers');
@@ -4843,7 +4898,7 @@ var instance = module.exports = function() {
 
 instance.util = $;
 
-},{"./util/find-reference":24,"./util/normalize-schema":25,"./util/resolve-schema":26,"./util/uri-helpers":27}],23:[function(require,module,exports){
+},{"./util/find-reference":25,"./util/normalize-schema":26,"./util/resolve-schema":27,"./util/uri-helpers":28}],24:[function(require,module,exports){
 'use strict';
 
 var clone = module.exports = function(obj) {
@@ -4870,7 +4925,7 @@ var clone = module.exports = function(obj) {
   return target;
 };
 
-},{}],24:[function(require,module,exports){
+},{}],25:[function(require,module,exports){
 'use strict';
 
 var $ = require('./uri-helpers');
@@ -4918,7 +4973,7 @@ var find = module.exports = function(id, refs) {
   return target;
 };
 
-},{"./uri-helpers":27}],25:[function(require,module,exports){
+},{"./uri-helpers":28}],26:[function(require,module,exports){
 'use strict';
 
 var $ = require('./uri-helpers');
@@ -4984,7 +5039,7 @@ module.exports = function(fakeroot, schema, push) {
   return copy;
 };
 
-},{"./clone-obj":23,"./uri-helpers":27}],26:[function(require,module,exports){
+},{"./clone-obj":24,"./uri-helpers":28}],27:[function(require,module,exports){
 'use strict';
 
 var $ = require('./uri-helpers');
@@ -5042,7 +5097,7 @@ module.exports = function(obj, refs, expand) {
   return clone(obj, refs, false, expand);
 };
 
-},{"./find-reference":24,"./uri-helpers":27}],27:[function(require,module,exports){
+},{"./find-reference":25,"./uri-helpers":28}],28:[function(require,module,exports){
 'use strict';
 
 // https://gist.github.com/pjt33/efb2f1134bab986113fd
@@ -5143,7 +5198,7 @@ module.exports = {
   getDocumentURI: getDocumentURI
 };
 
-},{}],28:[function(require,module,exports){
+},{}],29:[function(require,module,exports){
 /*
 
    this index.js file is used for including the faker library as a CommonJS module, instead of a bundle
@@ -5217,7 +5272,7 @@ Object.keys(_definitions).forEach(function(d){
     });
   });
 });
-},{"./lib/address":29,"./lib/company":30,"./lib/date":31,"./lib/finance":32,"./lib/hacker":33,"./lib/helpers":34,"./lib/image":35,"./lib/internet":36,"./lib/locales":37,"./lib/lorem":65,"./lib/name":66,"./lib/phone_number":67,"./lib/random":68}],29:[function(require,module,exports){
+},{"./lib/address":30,"./lib/company":31,"./lib/date":32,"./lib/finance":33,"./lib/hacker":34,"./lib/helpers":35,"./lib/image":36,"./lib/internet":37,"./lib/locales":38,"./lib/lorem":66,"./lib/name":67,"./lib/phone_number":68,"./lib/random":69}],30:[function(require,module,exports){
 var Helpers = require('./helpers');
 var faker = require('../index');
 
@@ -5326,7 +5381,7 @@ var address = {
 
 module.exports = address;
 
-},{"../index":28,"./helpers":34}],30:[function(require,module,exports){
+},{"../index":29,"./helpers":35}],31:[function(require,module,exports){
 var faker = require('../index');
 
 var company = {
@@ -5390,7 +5445,7 @@ var company = {
 
 module.exports = company;
 
-},{"../index":28}],31:[function(require,module,exports){
+},{"../index":29}],32:[function(require,module,exports){
 var faker = require("../index");
 
 var date = {
@@ -5448,7 +5503,7 @@ var date = {
 };
 module.exports = date;
 
-},{"../index":28}],32:[function(require,module,exports){
+},{"../index":29}],33:[function(require,module,exports){
 var Helpers = require('./helpers'),
     faker = require('../index');
 
@@ -5536,7 +5591,7 @@ var finance = {
 };
 
 module.exports = finance;
-},{"../index":28,"./helpers":34}],33:[function(require,module,exports){
+},{"../index":29,"./helpers":35}],34:[function(require,module,exports){
 var faker = require('../index');
 
 var hacker = {
@@ -5590,7 +5645,7 @@ var hacker = {
 
 module.exports = hacker;
 
-},{"../index":28}],34:[function(require,module,exports){
+},{"../index":29}],35:[function(require,module,exports){
 var faker = require('../index');
 
 // backword-compatibility
@@ -5632,7 +5687,7 @@ exports.replaceSymbolWithNumber = function (string, symbol) {
 // takes an array and returns it randomized
 exports.shuffle = function (o) {
     o = o || ["a", "b", "c"];
-    for (var j, x, i = o.length; i; j = faker.random.number(i), x = o[--i], o[i] = o[j], o[j] = x);
+    for (var j, x, i = o.length-1; i; j = faker.random.number(i), x = o[--i], o[i] = o[j], o[j] = x);
     return o;
 };
 
@@ -5769,7 +5824,7 @@ String.prototype.capitalize = function () { //v1.0
 */
 
 
-},{"../index":28}],35:[function(require,module,exports){
+},{"../index":29}],36:[function(require,module,exports){
 var faker = require('../index');
 
 var image = {
@@ -5833,7 +5888,7 @@ var image = {
 
 module.exports = image;
 
-},{"../index":28}],36:[function(require,module,exports){
+},{"../index":29}],37:[function(require,module,exports){
 var faker = require('../index'),
     password_generator = require('../vendor/password-generator.js'),
     random_ua = require('../vendor/user-agent');
@@ -5927,7 +5982,7 @@ var internet = {
 
 module.exports = internet;
 
-},{"../index":28,"../vendor/password-generator.js":70,"../vendor/user-agent":71}],37:[function(require,module,exports){
+},{"../index":29,"../vendor/password-generator.js":71,"../vendor/user-agent":72}],38:[function(require,module,exports){
 var faker = require('../index');
 exports['de'] = require('./locales/de.js');
 exports['de_AT'] = require('./locales/de_AT.js');
@@ -5956,7 +6011,7 @@ exports['sk'] = require('./locales/sk.js');
 exports['sv'] = require('./locales/sv.js');
 exports['vi'] = require('./locales/vi.js');
 exports['zh_CN'] = require('./locales/zh_CN.js');
-},{"../index":28,"./locales/de.js":38,"./locales/de_AT.js":39,"./locales/de_CH.js":40,"./locales/en.js":41,"./locales/en_AU.js":42,"./locales/en_BORK.js":43,"./locales/en_CA.js":44,"./locales/en_GB.js":45,"./locales/en_IND.js":46,"./locales/en_US.js":47,"./locales/en_au_ocker.js":48,"./locales/es.js":49,"./locales/fa.js":50,"./locales/fr.js":51,"./locales/it.js":52,"./locales/ja.js":53,"./locales/ko.js":54,"./locales/nb_NO.js":55,"./locales/nep.js":56,"./locales/nl.js":57,"./locales/pl.js":58,"./locales/pt_BR.js":59,"./locales/ru.js":60,"./locales/sk.js":61,"./locales/sv.js":62,"./locales/vi.js":63,"./locales/zh_CN.js":64}],38:[function(require,module,exports){
+},{"../index":29,"./locales/de.js":39,"./locales/de_AT.js":40,"./locales/de_CH.js":41,"./locales/en.js":42,"./locales/en_AU.js":43,"./locales/en_BORK.js":44,"./locales/en_CA.js":45,"./locales/en_GB.js":46,"./locales/en_IND.js":47,"./locales/en_US.js":48,"./locales/en_au_ocker.js":49,"./locales/es.js":50,"./locales/fa.js":51,"./locales/fr.js":52,"./locales/it.js":53,"./locales/ja.js":54,"./locales/ko.js":55,"./locales/nb_NO.js":56,"./locales/nep.js":57,"./locales/nl.js":58,"./locales/pl.js":59,"./locales/pt_BR.js":60,"./locales/ru.js":61,"./locales/sk.js":62,"./locales/sv.js":63,"./locales/vi.js":64,"./locales/zh_CN.js":65}],39:[function(require,module,exports){
 var de = {};
 module["exports"] = de;
 de.title = "German";
@@ -10497,7 +10552,7 @@ de.cell_phone = {
   ]
 };
 
-},{}],39:[function(require,module,exports){
+},{}],40:[function(require,module,exports){
 var de_AT = {};
 module["exports"] = de_AT;
 de_AT.title = "German (Austria)";
@@ -14043,7 +14098,7 @@ de_AT.cell_phone = {
   ]
 };
 
-},{}],40:[function(require,module,exports){
+},{}],41:[function(require,module,exports){
 var de_CH = {};
 module["exports"] = de_CH;
 de_CH.title = "German (Switzerland)";
@@ -14119,7 +14174,7 @@ de_CH.phone_number = {
   ]
 };
 
-},{}],41:[function(require,module,exports){
+},{}],42:[function(require,module,exports){
 var en = {};
 module["exports"] = en;
 en.title = "English";
@@ -22820,7 +22875,7 @@ en.finance.currency = {
     "symbol": ""
   }
 };
-},{}],42:[function(require,module,exports){
+},{}],43:[function(require,module,exports){
 var en_AU = {};
 module["exports"] = en_AU;
 en_AU.title = "Australia (English)";
@@ -23423,7 +23478,7 @@ en_AU.phone_number = {
   ]
 };
 
-},{}],43:[function(require,module,exports){
+},{}],44:[function(require,module,exports){
 var en_BORK = {};
 module["exports"] = en_BORK;
 en_BORK.title = "Bork (English)";
@@ -23535,7 +23590,7 @@ en_BORK.lorem = {
   ]
 };
 
-},{}],44:[function(require,module,exports){
+},{}],45:[function(require,module,exports){
 var en_CA = {};
 module["exports"] = en_CA;
 en_CA.title = "Canada (English)";
@@ -23615,7 +23670,7 @@ en_CA.phone_number = {
   ]
 };
 
-},{}],45:[function(require,module,exports){
+},{}],46:[function(require,module,exports){
 var en_GB = {};
 module["exports"] = en_GB;
 en_GB.title = "Great Britain (English)";
@@ -23745,7 +23800,7 @@ en_GB.cell_phone = {
   ]
 };
 
-},{}],46:[function(require,module,exports){
+},{}],47:[function(require,module,exports){
 var en_IND = {};
 module["exports"] = en_IND;
 en_IND.title = "India (English)";
@@ -24727,7 +24782,7 @@ en_IND.phone_number = {
   ]
 };
 
-},{}],47:[function(require,module,exports){
+},{}],48:[function(require,module,exports){
 var en_US = {};
 module["exports"] = en_US;
 en_US.title = "United States (English)";
@@ -25376,7 +25431,7 @@ en_US.phone_number = {
   ]
 };
 
-},{}],48:[function(require,module,exports){
+},{}],49:[function(require,module,exports){
 var en_au_ocker = {};
 module["exports"] = en_au_ocker;
 en_au_ocker.title = "Australia Ocker (English)";
@@ -25664,7 +25719,7 @@ en_au_ocker.phone_number = {
   ]
 };
 
-},{}],49:[function(require,module,exports){
+},{}],50:[function(require,module,exports){
 var es = {};
 module["exports"] = es;
 es.title = "Spanish";
@@ -27599,7 +27654,7 @@ es.cell_phone = {
   ]
 };
 
-},{}],50:[function(require,module,exports){
+},{}],51:[function(require,module,exports){
 var fa = {};
 module["exports"] = fa;
 fa.title = "Farsi";
@@ -28481,7 +28536,7 @@ fa.name = {
   ]
 };
 
-},{}],51:[function(require,module,exports){
+},{}],52:[function(require,module,exports){
 var fr = {};
 module["exports"] = fr;
 fr.title = "French";
@@ -30630,7 +30685,7 @@ fr.phone_number = {
   ]
 };
 
-},{}],52:[function(require,module,exports){
+},{}],53:[function(require,module,exports){
 var it = {};
 module["exports"] = it;
 it.title = "Italian";
@@ -32025,7 +32080,7 @@ it.phone_number = {
   ]
 };
 
-},{}],53:[function(require,module,exports){
+},{}],54:[function(require,module,exports){
 var ja = {};
 module["exports"] = ja;
 ja.title = "Japanese";
@@ -32223,7 +32278,7 @@ ja.name = {
   ]
 };
 
-},{}],54:[function(require,module,exports){
+},{}],55:[function(require,module,exports){
 var ko = {};
 module["exports"] = ko;
 ko.title = "Korean";
@@ -32572,7 +32627,7 @@ ko.name = {
   ]
 };
 
-},{}],55:[function(require,module,exports){
+},{}],56:[function(require,module,exports){
 var nb_NO = {};
 module["exports"] = nb_NO;
 nb_NO.title = "Norwegian";
@@ -33122,7 +33177,7 @@ nb_NO.phone_number = {
   ]
 };
 
-},{}],56:[function(require,module,exports){
+},{}],57:[function(require,module,exports){
 var nep = {};
 module["exports"] = nep;
 nep.title = "Nepalese";
@@ -33338,7 +33393,7 @@ nep.phone_number = {
   ]
 };
 
-},{}],57:[function(require,module,exports){
+},{}],58:[function(require,module,exports){
 var nl = {};
 module["exports"] = nl;
 nl.title = "Dutch";
@@ -34961,7 +35016,7 @@ nl.phone_number = {
   ]
 };
 
-},{}],58:[function(require,module,exports){
+},{}],59:[function(require,module,exports){
 var pl = {};
 module["exports"] = pl;
 pl.title = "Polish";
@@ -39043,7 +39098,7 @@ pl.cell_phone = {
   ]
 };
 
-},{}],59:[function(require,module,exports){
+},{}],60:[function(require,module,exports){
 var pt_BR = {};
 module["exports"] = pt_BR;
 pt_BR.title = "Portuguese (Brazil)";
@@ -39807,7 +39862,7 @@ pt_BR.phone_number = {
   ]
 };
 
-},{}],60:[function(require,module,exports){
+},{}],61:[function(require,module,exports){
 var ru = {};
 module["exports"] = ru;
 ru.title = "Russian";
@@ -41174,7 +41229,7 @@ ru.company = {
   ]
 };
 
-},{}],61:[function(require,module,exports){
+},{}],62:[function(require,module,exports){
 var sk = {};
 module["exports"] = sk;
 sk.title = "Slovakian";
@@ -45649,7 +45704,7 @@ sk.phone_number = {
   ]
 };
 
-},{}],62:[function(require,module,exports){
+},{}],63:[function(require,module,exports){
 var sv = {};
 module["exports"] = sv;
 sv.title = "Swedish";
@@ -46292,7 +46347,7 @@ sv.team = {
   ]
 };
 
-},{}],63:[function(require,module,exports){
+},{}],64:[function(require,module,exports){
 var vi = {};
 module["exports"] = vi;
 vi.title = "Vietnamese";
@@ -46712,7 +46767,7 @@ vi.lorem = {
   ]
 };
 
-},{}],64:[function(require,module,exports){
+},{}],65:[function(require,module,exports){
 var zh_CN = {};
 module["exports"] = zh_CN;
 zh_CN.title = "Chinese";
@@ -47117,7 +47172,7 @@ zh_CN.phone_number = {
   ]
 };
 
-},{}],65:[function(require,module,exports){
+},{}],66:[function(require,module,exports){
 var faker = require('../index');
 var Helpers = require('./helpers');
 
@@ -47163,7 +47218,7 @@ var lorem = {
 
 module.exports = lorem;
 
-},{"../index":28,"./helpers":34}],66:[function(require,module,exports){
+},{"../index":29,"./helpers":35}],67:[function(require,module,exports){
 var faker = require('../index');
 
 var _name = {
@@ -47222,7 +47277,7 @@ var _name = {
 
 module.exports = _name;
 
-},{"../index":28}],67:[function(require,module,exports){
+},{"../index":29}],68:[function(require,module,exports){
 var faker = require('../index');
 
 var phone = {
@@ -47245,7 +47300,7 @@ var phone = {
 
 module.exports = phone;
 
-},{"../index":28}],68:[function(require,module,exports){
+},{"../index":29}],69:[function(require,module,exports){
 var mersenne = require('../vendor/mersenne');
 var faker = require('../index');
 
@@ -47314,7 +47369,7 @@ var random = {
 
 module.exports = random;
 
-},{"../index":28,"../vendor/mersenne":69}],69:[function(require,module,exports){
+},{"../index":29,"../vendor/mersenne":70}],70:[function(require,module,exports){
 // this program is a JavaScript version of Mersenne Twister, with concealment and encapsulation in class,
 // an almost straight conversion from the original program, mt19937ar.c,
 // translated by y. okada on July 17, 2006.
@@ -47603,7 +47658,7 @@ exports.seed_array = function(A) {
 }
 
 
-},{}],70:[function(require,module,exports){
+},{}],71:[function(require,module,exports){
 /*
  * password-generator
  * Copyright(c) 2011-2013 Bermi Ferrer <bermi@bermilabs.com>
@@ -47669,7 +47724,7 @@ exports.seed_array = function(A) {
 
   // Establish the root object, `window` in the browser, or `global` on the server.
 }(this));
-},{}],71:[function(require,module,exports){
+},{}],72:[function(require,module,exports){
 /*
 
 Copyright (c) 2012-2014 Jeffrey Mealo
@@ -47880,7 +47935,7 @@ exports.generate = function generate() {
     return browser[random[0]](random[1]);
 };
 
-},{}],72:[function(require,module,exports){
+},{}],73:[function(require,module,exports){
 var ret = require('ret');
 var DRange = require('discontinuous-range');
 var types = ret.types;
@@ -48127,7 +48182,7 @@ function gen(token, groups) {
 
 
 
-},{"discontinuous-range":73,"ret":74}],73:[function(require,module,exports){
+},{"discontinuous-range":74,"ret":75}],74:[function(require,module,exports){
 //protected helper class
 function _SubRange(low, high) {
     this.low = low;
@@ -48273,7 +48328,7 @@ DiscontinuousRange.prototype.clone = function () {
 
 module.exports = DiscontinuousRange;
 
-},{}],74:[function(require,module,exports){
+},{}],75:[function(require,module,exports){
 var util      = require('./util');
 var types     = require('./types');
 var sets      = require('./sets');
@@ -48553,7 +48608,7 @@ module.exports = function(regexpStr) {
 
 module.exports.types = types;
 
-},{"./positions":75,"./sets":76,"./types":77,"./util":78}],75:[function(require,module,exports){
+},{"./positions":76,"./sets":77,"./types":78,"./util":79}],76:[function(require,module,exports){
 var types = require('./types');
 
 exports.wordBoundary = function() {
@@ -48572,7 +48627,7 @@ exports.end = function() {
   return { type: types.POSITION, value: '$' };
 };
 
-},{"./types":77}],76:[function(require,module,exports){
+},{"./types":78}],77:[function(require,module,exports){
 var types = require('./types');
 
 var INTS = function() {
@@ -48656,7 +48711,7 @@ exports.anyChar = function() {
   return { type: types.SET, set: NOTANYCHAR(), not: true };
 };
 
-},{"./types":77}],77:[function(require,module,exports){
+},{"./types":78}],78:[function(require,module,exports){
 module.exports = {
     ROOT       : 0
   , GROUP      : 1
@@ -48668,7 +48723,7 @@ module.exports = {
   , CHAR       : 7
 };
 
-},{}],78:[function(require,module,exports){
+},{}],79:[function(require,module,exports){
 var types = require('./types');
 var sets  = require('./sets');
 
@@ -48776,7 +48831,7 @@ exports.error = function(regexp, msg) {
   throw new SyntaxError('Invalid regular expression: /' + regexp + '/: ' + msg);
 };
 
-},{"./sets":76,"./types":77}],79:[function(require,module,exports){
+},{"./sets":77,"./types":78}],80:[function(require,module,exports){
 module.exports={
   "type": "array",
   "minItems": 15,
@@ -48784,7 +48839,7 @@ module.exports={
     "enum": ["red", "green", "blue", "yellow"]
   }
 }
-},{}],80:[function(require,module,exports){
+},{}],81:[function(require,module,exports){
 module.exports={
     "type": "array",
     "items": [
@@ -48799,7 +48854,7 @@ module.exports={
         }
     ]
 }
-},{}],81:[function(require,module,exports){
+},{}],82:[function(require,module,exports){
 module.exports={
   "type": "array",
   "minItems": 100,
@@ -48808,11 +48863,11 @@ module.exports={
     "type": "integer"
   }
 }
-},{}],82:[function(require,module,exports){
+},{}],83:[function(require,module,exports){
 module.exports={
     "type": "boolean"
 }
-},{}],83:[function(require,module,exports){
+},{}],84:[function(require,module,exports){
 module.exports={
     "type": "object",
     "properties": {
@@ -48835,7 +48890,7 @@ module.exports={
         "emailAddr"
     ]
 }
-},{}],84:[function(require,module,exports){
+},{}],85:[function(require,module,exports){
 module.exports={
     "type": "object",
     "properties": {
@@ -48853,7 +48908,7 @@ module.exports={
         "email"
     ]
 }
-},{}],85:[function(require,module,exports){
+},{}],86:[function(require,module,exports){
 module.exports={
     "type": "integer",
     "minimum": 600,
@@ -48861,7 +48916,7 @@ module.exports={
     "multipleOf": 7,
     "exclusiveMinimum": true
 }
-},{}],86:[function(require,module,exports){
+},{}],87:[function(require,module,exports){
 module.exports={
     "type": "object",
     "properties": {
@@ -48908,7 +48963,7 @@ module.exports={
         }
     }
 }
-},{}],87:[function(require,module,exports){
+},{}],88:[function(require,module,exports){
 var jsf = require('json-schema-faker');
 
 var schemas = {
@@ -49026,4 +49081,4 @@ $(document).ready(function () {
     });
 });
 
-},{"../schema/array/enum.json":79,"../schema/array/fixed.json":80,"../schema/array/n-times.json":81,"../schema/boolean.json":82,"../schema/chance/chance.json":83,"../schema/faker/faker.json":84,"../schema/integer.json":85,"../schema/reference.json":86,"json-schema-faker":5}]},{},[87]);
+},{"../schema/array/enum.json":80,"../schema/array/fixed.json":81,"../schema/array/n-times.json":82,"../schema/boolean.json":83,"../schema/chance/chance.json":84,"../schema/faker/faker.json":85,"../schema/integer.json":86,"../schema/reference.json":87,"json-schema-faker":5}]},{},[88]);
