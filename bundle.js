@@ -1901,9 +1901,8 @@ module.exports = function(value, path) {
 var container = require('../util/container');
 
 var faker = container.get('faker'),
-    Chance = container.get('chance'),
+    chance = container.get('chance'),
     RandExp = container.get('randexp'),
-    chance = new Chance(),
     randexp = RandExp.randexp;
 
 var random = require('../util/random'),
@@ -2039,9 +2038,11 @@ module.exports = combine;
 
 // static requires - handle both initial dependency load (deps will be available
 // among other modules) as well as they will be included by browserify AST
+var Chance = require('chance');
+
 var container = {
   faker: require('faker'),
-  chance: require('chance'),
+  chance: new Chance(),
   randexp: require('randexp')
 };
 
