@@ -29,6 +29,13 @@ Adding new example JSON schema includes adding them to:
 * [src/main.js](src/main.js) - to handle it in the app & browserify
 * [src/index.tpl](src/index.tpl) - display it
 
+## Releasing new version
+
+When new version of jsf is released, the demo page should be updated. This includes two steps:
+
+* updating jsf version in `package.json` file manually, according to the version released
+* run `grunt`
+
 ## Contribution
 
 Feel free to add issues and PRs. Make sure you prefix its title with `[online-demo]`.
